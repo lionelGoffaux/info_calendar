@@ -63,6 +63,7 @@ async def dowloadCalendar(client: httpx.AsyncClient, url: str) -> str:
     """Dowload a calendar from is url.
 
     Args:
+        client (httpx.AsyncClient): The client to use to dowload the calendar.
         url (str): The calendar's url.
 
     Returns:
@@ -89,7 +90,7 @@ async def getAllCalendars(calendarsPath: str) -> list[Tuple[str, str]]:
         for _, calendarURL in calendarsList:
             tasks.append(asyncio.create_task(dowloadCalendar(client, calendarURL)))
         calandar_result = await asyncio.gather(*tasks)
-        return [(name[0], calendar) for name, calendar in zip(calendarsList, calandar_result)]
+        return [(name, calendar) for (name, _), calendar in zip(calendarsList, calandar_result)]
 
 
 def getCleanName(eventName: str) -> str:
@@ -169,10 +170,10 @@ async def sync(calendarsListPath: str = 'calendars.yml') -> None:
 
     calendarsICS = await getAllCalendars(calendarsListPath)
 
-    # for calendarName, calendarICS in calendarsICS:
-    #     syncCalendar(calendarName, calendarICS)
+    for calendarName, calendarICS in calendarsICS:
+        syncCalendar(calendarName, calendarICS)
 
-    # updateSyncLastEndTime()
+    updateSyncLastEndTime()
 
 
 if __name__ == '__main__':
