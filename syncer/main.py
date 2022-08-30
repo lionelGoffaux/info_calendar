@@ -1,7 +1,8 @@
+import asyncio
 import re
 from typing import TextIO, Tuple
 
-import requests
+import httpx
 import yaml
 from ics import Calendar, Event
 
@@ -58,7 +59,7 @@ def updateSyncLastEndTime() -> None:
     pass
 
 
-def dowloadCalendar(url: str) -> str:
+async def dowloadCalendar(client: httpx.AsyncClient, url: str) -> str:
     """Dowload a calendar from is url.
 
     Args:
@@ -67,14 +68,13 @@ def dowloadCalendar(url: str) -> str:
     Returns:
         str: The isc file correspondaing to the calendar.
     """
-    response = requests.get(url)
-    if not response.ok:
+    response = await client.get(url)
+    if not response.status_code == 200:
         raise DowloadCalendarError()
-
     return response.text
 
 
-def getAllCalendars(calendarsPath: str) -> list[Tuple[str, str]]:
+async def getAllCalendars(calendarsPath: str) -> list[Tuple[str, str]]:
     """Get all ics files for the calendars in the calendars list.
 
     Args:
@@ -83,8 +83,13 @@ def getAllCalendars(calendarsPath: str) -> list[Tuple[str, str]]:
     Returns:
         list[str]: A list of all calendars' name and ics files.
     """
-    calendars = getCalendarsListFromFile(calendarsPath)
-    return [(name, dowloadCalendar(url)) for name, url in calendars]
+    async with httpx.AsyncClient() as client:
+        calendarsList = getCalendarsListFromFile(calendarsPath)
+        tasks = []
+        for _, calendarURL in calendarsList:
+            tasks.append(asyncio.create_task(dowloadCalendar(client, calendarURL)))
+        calandar_result = await asyncio.gather(*tasks)
+        return [(name[0], calendar) for name, calendar in zip(calendarsList, calandar_result)]
 
 
 def getCleanName(eventName: str) -> str:
@@ -158,18 +163,18 @@ def syncCalendar(calendarName: str, calendarICS: str) -> None:
     #TODO: save the calendars in the database
 
 
-def sync(calendarsListPath: str = 'calendars.yml') -> None:
+async def sync(calendarsListPath: str = 'calendars.yml') -> None:
     #TODO: capture and log the exceptions
     updateSyncLastStartTime()
 
-    calendarsICS = getAllCalendars(calendarsListPath)
+    calendarsICS = await getAllCalendars(calendarsListPath)
 
-    for calendarName, calendarICS in calendarsICS:
-        syncCalendar(calendarName, calendarICS)
+    # for calendarName, calendarICS in calendarsICS:
+    #     syncCalendar(calendarName, calendarICS)
 
-    updateSyncLastEndTime()
+    # updateSyncLastEndTime()
 
 
 if __name__ == '__main__':
     #TODO: run the sync function on a regular basis (using scheduler)
-    sync()
+    asyncio.run(sync())
