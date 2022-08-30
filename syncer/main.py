@@ -1,5 +1,5 @@
 import re
-from typing import Dict, TextIO, Tuple
+from typing import TextIO, Tuple
 
 import requests
 import yaml
@@ -160,6 +160,7 @@ def syncCalendar(calendarName: str, calendarICS: str) -> None:
 
 
 def sync(calendarsListPath: str = 'calendars.yml') -> None:
+    #TODO: capture and log the exceptions
     updateSyncLastStartTime()
 
     calendarsICS = getAllCalendars(calendarsListPath)
@@ -171,4 +172,5 @@ def sync(calendarsListPath: str = 'calendars.yml') -> None:
 
 
 if __name__ == '__main__':
+    #TODO: run the sync function on a regular basis (using scheduler)
     sync()
