@@ -115,21 +115,20 @@ def getType(description: str) -> str|None:
             return matches[0].split(':')[1].strip()
         
         
-def parseEvent(event: Event, result: dict[str, Calendar], calendarName: str) -> None:
+def parseEvent(event: Event, result: dict[str, Calendar]) -> None:
     """Parse an event and add it to the result dictionary.
 
     Args:
         event (Event): The event to parse.
         result (dict[str, Calendar]): The result dictionary.
-        calendarName (str): The name of the calendar.
     """
     event.name = getCleanName(event.name)
-    result.get(calendarName, Calendar()).events.add(event)
+    result.get(event.name, Calendar()).events.add(event)
     
     event_type = getType(event.description) if event.description else None
 
     if event_type:
-        result.get(f'{calendarName}/{event_type}', Calendar()).events.add(event)
+        result.get(f'{event.name}/{event_type}', Calendar()).events.add(event)
         
         
 def parseCalendar(calendarName: str, calendar: Calendar) -> dict[str, Calendar]:
@@ -146,7 +145,7 @@ def parseCalendar(calendarName: str, calendar: Calendar) -> dict[str, Calendar]:
     result = {}
     
     for event in calendar.events:
-        parseEvent(event, result, calendarName)
+        parseEvent(event, result)
 
     return result
 
