@@ -1,5 +1,5 @@
 import re
-from typing import TextIO, Tuple
+from typing import Dict, TextIO, Tuple
 
 import requests
 import yaml
@@ -87,25 +87,76 @@ def getAllCalendars(calendarsPath: str) -> list[Tuple[str, str]]:
     return [(name, dowloadCalendar(url)) for name, url in calendars]
 
 
-def getCleanName(event: Event) -> str:
-    name = event.name.split(' - ')
+def getCleanName(eventName: str) -> str:
+    """Clean the name of an event.
+
+    Args:
+        eventName (str): The name of the event.
+
+    Returns:
+        str: The clean name of the event.
+    """
+    name = eventName.split(' - ')
     return name[1] if len(name) > 1 else name[0]
 
 
-def getType(description: str) -> str:
+def getType(description: str) -> str|None:
+    """Get the type of the event from its description.
+
+    Args:
+        description (str): The description of the event.
+
+    Returns:
+        str|None: The type of the event or None if the event has no type.
+    """
     if description:
         matches = re.findall(r'type.*\n', description.lower())
         if matches:
             return matches[0].split(':')[1].strip()
+        
+        
+def parseEvent(event: Event, result: dict[str, Calendar], calendarName: str) -> None:
+    """Parse an event and add it to the result dictionary.
 
+    Args:
+        event (Event): The event to parse.
+        result (dict[str, Calendar]): The result dictionary.
+        calendarName (str): The name of the calendar.
+    """
+    event.name = getCleanName(event.name)
+    result.get(calendarName, Calendar()).events.add(event)
+    
+    event_type = getType(event.description) if event.description else None
 
-def parseEvent(event: Event) -> None:
-    # print(event.name, '\n'*3)
-    pass
+    if event_type:
+        result.get(f'{calendarName}/{event_type}', Calendar()).events.add(event)
+        
+        
+def parseCalendar(calendarName: str, calendar: Calendar) -> dict[str, Calendar]:
+    """Parse a calendar and return a dictionary of the different calendars 
+    one for each course and one for each type of event of a same course.
+
+    Args:
+        calendarName (str): The name of the calendar.
+        calendar (Calendar): The calendar to parse.
+
+    Returns:
+        dict[str, Calendar]: The result calendars and their keys.
+    """
+    result = {}
+    
+    for event in calendar.events:
+        parseEvent(event, result, calendarName)
+
+    return result
 
 
 def syncCalendar(calendarName: str, calendarICS: str) -> None:
     calendar = Calendar(calendarICS)
+    
+    parsed_calendars = parseCalendar(calendarName, calendar)
+    
+    #TODO: save the calendars in the database
 
 
 def sync(calendarsListPath: str = 'calendars.yml') -> None:
