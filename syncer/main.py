@@ -1,6 +1,6 @@
 import asyncio
 import re
-from typing import TextIO, Tuple
+from typing import Dict, TextIO, Tuple
 
 import httpx
 import yaml
@@ -88,7 +88,8 @@ async def getAllCalendars(calendarsPath: str) -> list[Tuple[str, str]]:
         calendarsList = getCalendarsListFromFile(calendarsPath)
         tasks = []
         for _, calendarURL in calendarsList:
-            tasks.append(asyncio.create_task(dowloadCalendar(client, calendarURL)))
+            tasks.append(asyncio.create_task(
+                dowloadCalendar(client, calendarURL)))
         calandar_result = await asyncio.gather(*tasks)
         return [(name, calendar) for (name, _), calendar in zip(calendarsList, calandar_result)]
 
@@ -106,7 +107,7 @@ def getCleanName(eventName: str) -> str:
     return name[1] if len(name) > 1 else name[0]
 
 
-def getType(description: str) -> str|None:
+def getType(description: str) -> str | None:
     """Get the type of the event from its description.
 
     Args:
@@ -119,25 +120,25 @@ def getType(description: str) -> str|None:
         matches = re.findall(r'type.*\n', description.lower())
         if matches:
             return matches[0].split(':')[1].strip()
-        
-        
-def parseEvent(event: Event, result: dict[str, Calendar]) -> None:
+
+
+def parseEvent(event: Event, result: Dict[str, Calendar]) -> None:
     """Parse an event and add it to the result dictionary.
 
     Args:
         event (Event): The event to parse.
-        result (dict[str, Calendar]): The result dictionary.
+        result (Dict[str, Calendar]): The result dictionary.
     """
     event.name = getCleanName(event.name)
     result.get(event.name, Calendar()).events.add(event)
-    
+
     event_type = getType(event.description) if event.description else None
 
     if event_type:
         result.get(f'{event.name}/{event_type}', Calendar()).events.add(event)
-        
-        
-def parseCalendar(calendarName: str, calendar: Calendar) -> dict[str, Calendar]:
+
+
+def parseCalendar(calendarName: str, calendar: Calendar) -> Dict[str, Calendar]:
     """Parse a calendar and return a dictionary of the different calendars 
     one for each course and one for each type of event of a same course.
 
@@ -146,10 +147,10 @@ def parseCalendar(calendarName: str, calendar: Calendar) -> dict[str, Calendar]:
         calendar (Calendar): The calendar to parse.
 
     Returns:
-        dict[str, Calendar]: The result calendars and their keys.
+        Dict[str, Calendar]: The result calendars and their keys.
     """
     result = {}
-    
+
     for event in calendar.events:
         parseEvent(event, result)
 
@@ -158,14 +159,14 @@ def parseCalendar(calendarName: str, calendar: Calendar) -> dict[str, Calendar]:
 
 def syncCalendar(calendarName: str, calendarICS: str) -> None:
     calendar = Calendar(calendarICS)
-    
+
     parsed_calendars = parseCalendar(calendarName, calendar)
-    
-    #TODO: save the calendars in the database
+
+    # TODO: save the calendars in the database
 
 
 async def sync(calendarsListPath: str = 'calendars.yml') -> None:
-    #TODO: capture and log the exceptions
+    # TODO: capture and log the exceptions
     updateSyncLastStartTime()
 
     calendarsICS = await getAllCalendars(calendarsListPath)
@@ -177,5 +178,5 @@ async def sync(calendarsListPath: str = 'calendars.yml') -> None:
 
 
 if __name__ == '__main__':
-    #TODO: run the sync function on a regular basis (using scheduler)
+    # TODO: run the sync function on a regular basis (using scheduler)
     asyncio.run(sync())
