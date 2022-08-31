@@ -1,6 +1,6 @@
 import asyncio
 import re
-from typing import Dict, TextIO, Tuple
+from typing import TextIO
 
 import httpx
 import yaml
@@ -15,7 +15,7 @@ class DowloadCalendarError(Exception):
     pass
 
 
-def parseCalendarsFile(calendarsFile: TextIO) -> list[Tuple[str, str]]:
+def parseCalendarsFile(calendarsFile: TextIO) -> list[tuple[str, str]]:
     """Parse the yaml imput from a file and construct the list of all
     the calendars' name and url.
 
@@ -23,7 +23,7 @@ def parseCalendarsFile(calendarsFile: TextIO) -> list[Tuple[str, str]]:
         calendarsFile (TextIO): The calendars file
 
     Returns:
-        list[Tuple[str, str]]: A list of the calendars' name and url. 
+        list[tuple[str, str]]: A list of the calendars' name and url. 
     """
     calendarsList = yaml.safe_load(calendarsFile)
     calendarsList = [(calendar['name'], calendar['url'])
@@ -31,7 +31,7 @@ def parseCalendarsFile(calendarsFile: TextIO) -> list[Tuple[str, str]]:
     return calendarsList
 
 
-def getCalendarsListFromFile(calendarsPath: str) -> list[Tuple[str, str]]:
+def getCalendarsListFromFile(calendarsPath: str) -> list[tuple[str, str]]:
     """Read a YAML file with all the calendars and return a list of
     the calendars' name and url.
 
@@ -39,7 +39,7 @@ def getCalendarsListFromFile(calendarsPath: str) -> list[Tuple[str, str]]:
         calendarsPath (str): The path of the YAML file containing the calendars list.
 
     Returns:
-        list[Tuple[str, str]]: A list of the calendars' name and url.
+        list[tuple[str, str]]: A list of the calendars' name and url.
     """
 
     try:
@@ -75,14 +75,14 @@ async def dowloadCalendar(client: httpx.AsyncClient, url: str) -> str:
     return response.text
 
 
-async def getAllCalendars(calendarsPath: str) -> list[Tuple[str, str]]:
+async def getAllCalendars(calendarsPath: str) -> list[tuple[str, str]]:
     """Get all ics files for the calendars in the calendars list.
 
     Args:
         calendarListPath (str): The path to the calendar list.
 
     Returns:
-        list[str]: A list of all calendars' name and ics files.
+        list[tuple[str, str]]: A list of all calendars' name and ics files.
     """
     async with httpx.AsyncClient() as client:
         calendarsList = getCalendarsListFromFile(calendarsPath)
@@ -122,12 +122,12 @@ def getType(description: str) -> str | None:
             return matches[0].split(':')[1].strip()
 
 
-def parseEvent(event: Event, result: Dict[str, Calendar]) -> None:
+def parseEvent(event: Event, result: dict[str, Calendar]) -> None:
     """Parse an event and add it to the result dictionary.
 
     Args:
         event (Event): The event to parse.
-        result (Dict[str, Calendar]): The result dictionary.
+        result (dict[str, Calendar]): The result dictionary.
     """
     event.name = getCleanName(event.name)
     result.get(event.name, Calendar()).events.add(event)
@@ -138,7 +138,7 @@ def parseEvent(event: Event, result: Dict[str, Calendar]) -> None:
         result.get(f'{event.name}/{event_type}', Calendar()).events.add(event)
 
 
-def parseCalendar(calendarName: str, calendar: Calendar) -> Dict[str, Calendar]:
+def parseCalendar(calendarName: str, calendar: Calendar) -> dict[str, Calendar]:
     """Parse a calendar and return a dictionary of the different calendars 
     one for each course and one for each type of event of a same course.
 
@@ -147,7 +147,7 @@ def parseCalendar(calendarName: str, calendar: Calendar) -> Dict[str, Calendar]:
         calendar (Calendar): The calendar to parse.
 
     Returns:
-        Dict[str, Calendar]: The result calendars and their keys.
+        dict[str, Calendar]: The result calendars and their keys.
     """
     result = {}
 
