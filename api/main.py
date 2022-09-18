@@ -27,6 +27,7 @@ def list_calendar_courses(calendar_name: str):
     Args:
         calendar_name(str): The calendar's name.
     """
+
     courses = redis.smembers(f'coursesList/{calendar_name}')
     if not courses:
         return jsonify({'error': 'calendar not found'}), 404
@@ -62,4 +63,4 @@ def calendar():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=80, debug=False)
+    app.run(host='0.0.0.0', port=5000, debug=False)
