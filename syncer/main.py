@@ -118,22 +118,27 @@ def get_clean_name(event_name: str) -> str:
         str: The clean name of the event.
     """
     name = event_name.split(' - ')
-    return name[1] if len(name) > 1 else name[0]
+    name = name[1] if len(name) > 1 else name[0]
+    return name
 
 
-def get_type(description: str) -> str | None:
+def get_type(event: Event) -> str | None:
     """Get the type of the event from its description.
 
     Args:
-        description (str): The description of the event.
+        event (Event): The event.
 
     Returns:
         str|None: The type of the event or None if the event has no type.
     """
-    if description:
-        matches = re.findall(r'type.*\n', description.lower())
+    if event.description:
+        matches = re.findall(r'type.*\n', event.description.lower())
         if matches:
             return matches[0].split(':')[1].strip()
+
+
+def is_canceled(event: Event) -> bool:
+    return event.name and "annulé" in event.name.lower()
 
 
 def set_proper_event_name(event: Event):
@@ -143,7 +148,8 @@ def set_proper_event_name(event: Event):
         event (Event):  The event.
     """
     event.name = get_clean_name(event.name)
-    # TODO: add "annulé" to canceled events
+    if is_canceled(event):
+        event.name = '[annulé] ' + event.name
 
 
 def add_event_to_courses_calendars(event, courses_calendars):
@@ -155,7 +161,7 @@ def add_event_to_courses_calendars(event, courses_calendars):
     """
     courses_calendars.get(event.name, Calendar()).events.add(event)
 
-    event_type = get_type(event.description) if event.description else None
+    event_type = get_type(event)
     if event_type:
         courses_calendars.get(f'{event.name}/{event_type}', Calendar()).events.add(event)
 
@@ -201,6 +207,9 @@ async def sync(calendars_list_path: str = 'calendars.yml'):
 
 
 def sync_job():
+    """
+    Launch the sync and handle the possible errors.
+    """
     try:
         asyncio.run(sync())
     except DownloadCalendarError:
@@ -210,13 +219,17 @@ def sync_job():
 
 
 def main():
-    log_format = '[%(levelname)s] %(asctime)s - %(message)s'
-    logging.basicConfig(level=logging.INFO, format=log_format)
+    set_logging_config()
 
     schedule.every(15).minutes.do(sync_job)
 
     while True:
         schedule.run_pending()
+
+
+def set_logging_config():
+    log_format = '[%(levelname)s] %(asctime)s - %(message)s'
+    logging.basicConfig(level=logging.INFO, format=log_format)
 
 
 if __name__ == '__main__':
