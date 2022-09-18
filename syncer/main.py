@@ -4,110 +4,111 @@ from typing import TextIO
 
 import httpx
 import yaml
-from ics import Calendar, Event
+from ics import Calendar
+from ics.event import Event
 
 
 class ParseCalendarListError(Exception):
     pass
 
 
-class DowloadCalendarError(Exception):
+class DownloadCalendarError(Exception):
     pass
 
 
-def parseCalendarsFile(calendarsFile: TextIO) -> list[tuple[str, str]]:
-    """Parse the yaml imput from a file and construct the list of all
+def parse_calendars_file(calendars_file: TextIO) -> list[tuple[str, str]]:
+    """Parse the yaml input from a file and construct the list of all
     the calendars' name and url.
 
     Args:
-        calendarsFile (TextIO): The calendars file
+        calendars_file (TextIO): The calendars file
 
     Returns:
         list[tuple[str, str]]: A list of the calendars' name and url. 
     """
-    calendarsList = yaml.safe_load(calendarsFile)
-    calendarsList = [(calendar['name'], calendar['url'])
-                     for calendar in calendarsList]
-    return calendarsList
+    calendars_list = yaml.safe_load(calendars_file)
+    calendars_list = [(calendar['name'], calendar['url'])
+                      for calendar in calendars_list]
+    return calendars_list
 
 
-def getCalendarsListFromFile(calendarsPath: str) -> list[tuple[str, str]]:
+def get_calendars_list_from_file(calendars_path: str) -> list[tuple[str, str]]:
     """Read a YAML file with all the calendars and return a list of
     the calendars' name and url.
 
     Args:
-        calendarsPath (str): The path of the YAML file containing the calendars list.
+        calendars_path (str): The path of the YAML file containing the calendars list.
 
     Returns:
         list[tuple[str, str]]: A list of the calendars' name and url.
     """
 
     try:
-        with open(calendarsPath) as calendarsFile:
-            return parseCalendarsFile(calendarsFile)
+        with open(calendars_path) as calendarsFile:
+            return parse_calendars_file(calendarsFile)
     except Exception:
         raise ParseCalendarListError()
 
 
-def updateSyncLastStartTime() -> None:
+def update_sync_last_start_time():
     # TODO
     pass
 
 
-def updateSyncLastEndTime() -> None:
+def update_sync_last_end_time():
     # TODO
     pass
 
 
-async def dowloadCalendar(client: httpx.AsyncClient, url: str) -> str:
-    """Dowload a calendar from is url.
+async def download_calendar(client: httpx.AsyncClient, url: str) -> str:
+    """Download a calendar from is url.
 
     Args:
-        client (httpx.AsyncClient): The client to use to dowload the calendar.
+        client (httpx.AsyncClient): The client to use to download the calendar.
         url (str): The calendar's url.
 
     Returns:
-        str: The isc file correspondaing to the calendar.
+        str: The isc file corresponding to the calendar.
     """
     response = await client.get(url)
     if not response.status_code == 200:
-        raise DowloadCalendarError()
+        raise DownloadCalendarError()
     return response.text
 
 
-async def getAllCalendars(calendarsPath: str) -> list[tuple[str, str]]:
+async def get_all_calendars(calendars_path: str) -> list[tuple[str, str]]:
     """Get all ics files for the calendars in the calendars list.
 
     Args:
-        calendarListPath (str): The path to the calendar list.
+        calendars_path (str): The path to the calendar list.
 
     Returns:
         list[tuple[str, str]]: A list of all calendars' name and ics files.
     """
     async with httpx.AsyncClient() as client:
-        calendarsList = getCalendarsListFromFile(calendarsPath)
+        calendars_list = get_calendars_list_from_file(calendars_path)
         tasks = []
-        for _, calendarURL in calendarsList:
+        for _, calendarURL in calendars_list:
             tasks.append(asyncio.create_task(
-                dowloadCalendar(client, calendarURL)))
-        calandar_result = await asyncio.gather(*tasks)
-        return [(name, calendar) for (name, _), calendar in zip(calendarsList, calandar_result)]
+                download_calendar(client, calendarURL)))
+        calendar_result = await asyncio.gather(*tasks)
+        return [(name, calendar) for (name, _), calendar in zip(calendars_list, calendar_result)]
 
 
-def getCleanName(eventName: str) -> str:
+def get_clean_name(event_name: str) -> str:
     """Clean the name of an event.
 
     Args:
-        eventName (str): The name of the event.
+        event_name (str): The name of the event.
 
     Returns:
         str: The clean name of the event.
     """
-    name = eventName.split(' - ')
+    name = event_name.split(' - ')
     return name[1] if len(name) > 1 else name[0]
 
 
-def getType(description: str) -> str | None:
+def get_type(description: str) -> str | None:
     """Get the type of the event from its description.
 
     Args:
@@ -122,59 +123,65 @@ def getType(description: str) -> str | None:
             return matches[0].split(':')[1].strip()
 
 
-def parseEvent(event: Event, result: dict[str, Calendar]) -> None:
-    """Parse an event and add it to the result dictionary.
+def set_proper_event_name(event: Event):
+    """Set a proper name for a event.
 
     Args:
-        event (Event): The event to parse.
-        result (dict[str, Calendar]): The result dictionary.
+        event (Event):  The event.
     """
-    event.name = getCleanName(event.name)
-    result.get(event.name, Calendar()).events.add(event)
-
-    event_type = getType(event.description) if event.description else None
-
-    if event_type:
-        result.get(f'{event.name}/{event_type}', Calendar()).events.add(event)
+    event.name = get_clean_name(event.name)
+    # TODO: add "annulé" to canceled events
 
 
-def parseCalendar(calendarName: str, calendar: Calendar) -> dict[str, Calendar]:
-    """Parse a calendar and return a dictionary of the different calendars 
-    one for each course and one for each type of event of a same course.
+def add_event_to_courses_calendars(event, courses_calendars):
+    """Add an event to its courses calendars.
 
     Args:
-        calendarName (str): The name of the calendar.
+        event (Event):
+        courses_calendars (dict[str, Calendar]): The courses calendars
+    """
+    courses_calendars.get(event.name, Calendar()).events.add(event)
+
+    event_type = get_type(event.description) if event.description else None
+    if event_type:
+        courses_calendars.get(f'{event.name}/{event_type}', Calendar()).events.add(event)
+
+
+def split_into_courses_calendars(calendar: Calendar) -> dict[str, Calendar]:
+    """Split a calendar into a calendar into multiple calendars one for each course.
+
+    Args:
         calendar (Calendar): The calendar to parse.
 
     Returns:
-        dict[str, Calendar]: The result calendars and their keys.
+        dict[str, Calendar]: The courses_calendar calendars and their keys.
     """
-    result = {}
-
+    courses_calendars = {}
     for event in calendar.events:
-        parseEvent(event, result)
+        set_proper_event_name(event)
+        add_event_to_courses_calendars(event, courses_calendars)
 
-    return result
+    return courses_calendars
 
 
-def syncCalendar(calendarName: str, calendarICS: str) -> None:
-    calendar = Calendar(calendarICS)
+def sync_calendar(calendar_name: str, calendar_ics: str) -> None:
+    calendar = Calendar(calendar_ics)
 
-    parsed_calendars = parseCalendar(calendarName, calendar)
+    parsed_calendars = split_into_courses_calendars(calendar)
 
     # TODO: save the calendars in the database
 
 
-async def sync(calendarsListPath: str = 'calendars.yml') -> None:
+async def sync(calendars_list_path: str = 'calendars.yml'):
     # TODO: capture and log the exceptions
-    updateSyncLastStartTime()
+    update_sync_last_start_time()
 
-    calendarsICS = await getAllCalendars(calendarsListPath)
+    calendars_ics = await get_all_calendars(calendars_list_path)
 
-    for calendarName, calendarICS in calendarsICS:
-        syncCalendar(calendarName, calendarICS)
+    for calendar_name, calendar_ics in calendars_ics:
+        sync_calendar(calendar_name, calendar_ics)
 
-    updateSyncLastEndTime()
+    update_sync_last_end_time()
 
 
 if __name__ == '__main__':
