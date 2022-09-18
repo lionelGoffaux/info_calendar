@@ -44,10 +44,11 @@ def list_calendars():
 
 @app.route("/api/update_info")
 def update_info():
-    """Return the last update time and the last update start time."""
-    update_time = redis.get('updateTime')
-    update_start = redis.get('updateStart')
-    return jsonify({'update_time': update_time, 'update_start': update_start})
+    """Return the last update start time and the last update end time."""
+    return jsonify({
+        'updateStart': redis.get('updateStart'),
+        'updateEnd': redis.get('updateEnd')
+    })
 
 
 @app.route("/calendar.ics")
