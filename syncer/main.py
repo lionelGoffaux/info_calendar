@@ -239,6 +239,31 @@ def sync_calendar(calendar_name: str, calendar_ics: str):
     calendar = Calendar(calendar_ics)
     parsed_calendars = split_into_courses_calendars(calendar)
     save_calendars(calendar_name, parsed_calendars)
+    save_course_list(calendar_name, parsed_calendars.keys())
+    save_calendar_name(calendar_name)
+
+
+def save_calendar_name(calendar_name: str):
+    """Save the calendar's name in the redis.
+
+    Args:
+        calendar_name(str): The calendar's name.
+    """
+    redis.sadd('calendars', calendar_name)
+
+
+def save_course_list(calendar_name: str, courses_name: list[str]):
+    """Save the list of courses in the redis.
+
+    Args:
+        calendar_name(str): The calendar's name.
+    """
+    for course_name in courses_name:
+        if '/' not in course_name:
+            redis.sadd(f'coursesList/{calendar_name}', course_name)
+        else:
+            course_name, course_type = course_name.split('/')
+            redis.sadd(f'coursesList/{calendar_name}/{course_name}', course_type)
 
 
 async def sync_all_calendars(calendars_ics: list[tuple[str, str]]):
@@ -283,6 +308,7 @@ def main():
 
     schedule.every(15).minutes.do(sync_job)
 
+    schedule.run_all()
     while True:
         schedule.run_pending()
 
