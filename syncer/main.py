@@ -2,12 +2,16 @@ import asyncio
 import re
 import logging
 from typing import TextIO
+from datetime import datetime
 
 import httpx
 import yaml
 import schedule
+from redis import Redis
 from ics import Calendar
 from ics.event import Event
+
+redis = Redis(host='redis')
 
 
 class ParseCalendarListError(Exception):
@@ -52,14 +56,25 @@ def get_calendars_list_from_file(calendars_path: str) -> list[tuple[str, str]]:
         raise ParseCalendarListError()
 
 
+def get_formatted_datetime():
+    """Return the date and time formatted."""
+    now = datetime.now()
+    formatted_now = f'{now:%-d %B %Y %H:%M:%S}'
+    return formatted_now
+
+
 def update_sync_last_start_time():
-    # TODO
-    logging.info(f'a synchronization started at')
+    """Update the start time of the last sync in the redis db."""
+    formatted_datetime = get_formatted_datetime()
+    logging.info(f'a synchronization started at {formatted_datetime}')
+    redis.set('updateStart', formatted_datetime)
 
 
 def update_sync_last_end_time():
-    # TODO
-    logging.info(f'a synchronization ended at')
+    """Update the end time of the last sync in the redis db."""
+    formatted_datetime = get_formatted_datetime()
+    logging.info(f'a synchronization ended at {formatted_datetime}')
+    redis.set('updateEnd', formatted_datetime)
 
 
 async def download_calendar(client: httpx.AsyncClient, url: str) -> str:
@@ -74,7 +89,7 @@ async def download_calendar(client: httpx.AsyncClient, url: str) -> str:
     """
     try:
         response = await client.get(url)
-    except (httpx.ConnectTimeout, httpx.ConnectError):
+    except Exception:
         raise DownloadCalendarError()
 
     if not response.status_code == 200:
@@ -95,14 +110,24 @@ async def get_all_calendars(calendars_path: str) -> list[tuple[str, str]]:
     """
     async with httpx.AsyncClient() as client:
         calendars_list = get_calendars_list_from_file(calendars_path)
-        calendars_ics = await download_all_calendars(calendars_list, client)
+        calendars_url_list = [url for _, url in calendars_list]
+        calendars_ics = await download_all_calendars(calendars_url_list, client)
         calendars = [(name, calendar) for (name, _), calendar in zip(calendars_list, calendars_ics)]
         return calendars
 
 
-async def download_all_calendars(calendars_list, client):
+async def download_all_calendars(calendars_url_list: list[str], client: httpx.AsyncClient) -> list[str]:
+    """Download all calendars isc file.
+
+    Args:
+        calendars_url_list(list[tuple[str, str]]):
+        client(httpx.AsyncClient): The httpx async client
+
+    Returns:
+        list[str]: the calendars ics file
+    """
     tasks = []
-    for _, calendarURL in calendars_list:
+    for calendarURL in calendars_url_list:
         tasks.append(asyncio.create_task(download_calendar(client, calendarURL)))
     calendars = await asyncio.gather(*tasks)
     return calendars
@@ -138,6 +163,15 @@ def get_type(event: Event) -> str | None:
 
 
 def is_canceled(event: Event) -> bool:
+    """Check if an event is canceled.
+
+    Args:
+        event (Event): The event to check.
+
+    Returns:
+        bool: True if the event is canceled.
+        bool: True if the event is canceled.
+    """
     return event.name and "annulé" in event.name.lower()
 
 
@@ -149,7 +183,7 @@ def set_proper_event_name(event: Event):
     """
     event.name = get_clean_name(event.name)
     if is_canceled(event):
-        event.name = '[annulé] ' + event.name
+        event.name = '[ANNULÉ] ' + event.name
 
 
 def add_event_to_courses_calendars(event, courses_calendars):
@@ -183,21 +217,47 @@ def split_into_courses_calendars(calendar: Calendar) -> dict[str, Calendar]:
     return courses_calendars
 
 
-def sync_calendar(calendar_name: str, calendar_ics: str) -> None:
+def save_calendars(calendar_name: str, calendars: dict[str, Calendar]):
+    """Save all courses' calendar in the redis.
+
+    Args:
+        calendar_name(str): The base calendar's name.
+        calendars(list[str, Calendar]): The calendars of each course.
+    """
+    for course_name, calendar in calendars:
+        redis.set(f'course/{calendar_name}/{course_name}', str(calendar))
+
+
+def sync_calendar(calendar_name: str, calendar_ics: str):
+    """
+    Synchronize a calendar.
+    Args:
+        calendar_name(str): The calendar's name.
+        calendar_ics(str): The calendar's ics file.
+==
+    """
     calendar = Calendar(calendar_ics)
-
     parsed_calendars = split_into_courses_calendars(calendar)
+    save_calendars(calendar_name, parsed_calendars)
 
-    # TODO: save the calendars in the database
 
+async def sync_all_calendars(calendars_ics: list[tuple[str, str]]):
+    """Synchronize all calendars.
 
-async def sync_all_calendars(calendars_ics):
+    Args:
+        calendars_ics(list[tuple[str, str]]): The calendars' ics files.
+    """
     for calendar_name, calendar_ics in calendars_ics:
         sync_calendar(calendar_name, calendar_ics)
         logging.info(f"successfully sync {calendar_name}")
 
 
 async def sync(calendars_list_path: str = 'calendars.yml'):
+    """Synchronize all calendars in the redis.
+
+    Args:
+        calendars_list_path(str): The path to the calendars list.
+    """
     update_sync_last_start_time()
 
     calendars_ics = await get_all_calendars(calendars_list_path)

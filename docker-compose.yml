@@ -1,0 +1,14 @@
+version: '3.4'
+
+services:
+    syncer:
+        image: syncer:latest
+        build: ./syncer
+        container_name: syncer
+        depends_on:
+            - redis
+        restart: unless-stopped
+    redis:
+        container_name: redis
+        image: redis:latest
+        restart: unless-stopped
