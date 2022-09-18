@@ -1,9 +1,11 @@
 import asyncio
 import re
+import logging
 from typing import TextIO
 
 import httpx
 import yaml
+import schedule
 from ics import Calendar
 from ics.event import Event
 
@@ -52,12 +54,12 @@ def get_calendars_list_from_file(calendars_path: str) -> list[tuple[str, str]]:
 
 def update_sync_last_start_time():
     # TODO
-    pass
+    logging.info(f'a synchronization started at')
 
 
 def update_sync_last_end_time():
     # TODO
-    pass
+    logging.info(f'a synchronization ended at')
 
 
 async def download_calendar(client: httpx.AsyncClient, url: str) -> str:
@@ -70,9 +72,15 @@ async def download_calendar(client: httpx.AsyncClient, url: str) -> str:
     Returns:
         str: The isc file corresponding to the calendar.
     """
-    response = await client.get(url)
+    try:
+        response = await client.get(url)
+    except (httpx.ConnectTimeout, httpx.ConnectError):
+        raise DownloadCalendarError()
+
     if not response.status_code == 200:
         raise DownloadCalendarError()
+
+    logging.info(f"successfully download calendar at {url}")
     return response.text
 
 
@@ -87,12 +95,17 @@ async def get_all_calendars(calendars_path: str) -> list[tuple[str, str]]:
     """
     async with httpx.AsyncClient() as client:
         calendars_list = get_calendars_list_from_file(calendars_path)
-        tasks = []
-        for _, calendarURL in calendars_list:
-            tasks.append(asyncio.create_task(
-                download_calendar(client, calendarURL)))
-        calendar_result = await asyncio.gather(*tasks)
-        return [(name, calendar) for (name, _), calendar in zip(calendars_list, calendar_result)]
+        calendars_ics = await download_all_calendars(calendars_list, client)
+        calendars = [(name, calendar) for (name, _), calendar in zip(calendars_list, calendars_ics)]
+        return calendars
+
+
+async def download_all_calendars(calendars_list, client):
+    tasks = []
+    for _, calendarURL in calendars_list:
+        tasks.append(asyncio.create_task(download_calendar(client, calendarURL)))
+    calendars = await asyncio.gather(*tasks)
+    return calendars
 
 
 def get_clean_name(event_name: str) -> str:
@@ -172,18 +185,39 @@ def sync_calendar(calendar_name: str, calendar_ics: str) -> None:
     # TODO: save the calendars in the database
 
 
+async def sync_all_calendars(calendars_ics):
+    for calendar_name, calendar_ics in calendars_ics:
+        sync_calendar(calendar_name, calendar_ics)
+        logging.info(f"successfully sync {calendar_name}")
+
+
 async def sync(calendars_list_path: str = 'calendars.yml'):
-    # TODO: capture and log the exceptions
     update_sync_last_start_time()
 
     calendars_ics = await get_all_calendars(calendars_list_path)
-
-    for calendar_name, calendar_ics in calendars_ics:
-        sync_calendar(calendar_name, calendar_ics)
+    await sync_all_calendars(calendars_ics)
 
     update_sync_last_end_time()
 
 
+def sync_job():
+    try:
+        asyncio.run(sync())
+    except DownloadCalendarError:
+        logging.error('an error occur during the download of the calendars')
+    except ParseCalendarListError:
+        logging.error('an error occur during the parsing of the calendars list')
+
+
+def main():
+    log_format = '[%(levelname)s] %(asctime)s - %(message)s'
+    logging.basicConfig(level=logging.INFO, format=log_format)
+
+    schedule.every(15).minutes.do(sync_job)
+
+    while True:
+        schedule.run_pending()
+
+
 if __name__ == '__main__':
-    # TODO: run the sync function on a regular basis (using scheduler)
-    asyncio.run(sync())
+    main()
