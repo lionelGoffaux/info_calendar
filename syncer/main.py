@@ -193,11 +193,17 @@ def add_event_to_courses_calendars(event, courses_calendars):
         event (Event):
         courses_calendars (dict[str, Calendar]): The courses calendars
     """
-    courses_calendars.get(event.name, Calendar()).events.add(event)
+    calendar = courses_calendars.get(event.name, Calendar())
+
+    calendar.events.add(event)
+    courses_calendars[event.name] = calendar
 
     event_type = get_type(event)
     if event_type:
-        courses_calendars.get(f'{event.name}/{event_type}', Calendar()).events.add(event)
+        calendar = courses_calendars.get(f'{event.name}/{event_type}', Calendar())
+        calendar.events.add(event)
+        courses_calendars[f'{event.name}/{event_type}'] = calendar
+
 
 
 def split_into_courses_calendars(calendar: Calendar) -> dict[str, Calendar]:
@@ -224,7 +230,7 @@ def save_calendars(calendar_name: str, calendars: dict[str, Calendar]):
         calendar_name(str): The base calendar's name.
         calendars(list[str, Calendar]): The calendars of each course.
     """
-    for course_name, calendar in calendars:
+    for course_name, calendar in calendars.items():
         redis.set(f'course/{calendar_name}/{course_name}', str(calendar))
 
 
@@ -252,17 +258,19 @@ def save_calendar_name(calendar_name: str):
     redis.sadd('calendars', calendar_name)
 
 
-def save_course_list(calendar_name: str, courses_name: list[str]):
+def save_course_list(calendar_name: str, courses_name):
     """Save the list of courses in the redis.
 
     Args:
         calendar_name(str): The calendar's name.
+        courses_name(list[str]) : The list of courses' names.
     """
+
     for course_name in courses_name:
         if '/' not in course_name:
             redis.sadd(f'coursesList/{calendar_name}', course_name)
         else:
-            course_name, course_type = course_name.split('/')
+            course_name, course_type = course_name.split('/', 1)
             redis.sadd(f'coursesList/{calendar_name}/{course_name}', course_type)
 
 

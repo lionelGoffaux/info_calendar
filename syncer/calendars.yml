@@ -1,7 +1,7 @@
 ---
-- name: MAB1
+- name: MA1
   url: "https://hplanning2022.umons.ac.be/Telechargements/ical/Edt__MAB1___Sc__informatiques__FA.ics?version=2021.0.1.2&idICal=08446F168D36A87DCC1D6AE96DBAEDBB&param=643d5b312e2e36325d2666683d3126663d3131303030"
-- name: MAB2
+- name: MA2
   url: "https://hplanning2022.umons.ac.be/Telechargements/ical/Edt__MAB2___Sc__informatiques__FA.ics?version=2021.0.1.3&idICal=8831A1B237A4D12C0EE9CAF7128B74AE&param=643d5b312e2e36325d2666683d3126663d3131303030"
 - name: BAC1
   url: "https://hplanning2022.umons.ac.be/Telechargements/ical/Edt__BAB1___Sc__informatiques.ics?version=2021.0.1.3&idICal=0761D18EE9E46515176D24076096B534&param=643d5b312e2e36325d2666683d3126663d3131303030"

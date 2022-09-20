@@ -1,8 +1,15 @@
 version: '3.4'
 
 services:
+    api:
+        image: infocalendar-api:latest
+        build: ./api
+        container_name: api
+        ports:
+            - 5000:5000
+        restart: unless-stopped
     syncer:
-        image: syncer:latest
+        image: infocalendar-syncer:latest
         build: ./syncer
         container_name: syncer
         depends_on:
