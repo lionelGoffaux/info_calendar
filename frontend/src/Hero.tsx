@@ -24,8 +24,8 @@ export function Hero() {
     <div className="md:absolute md:bg-base-100/60 md:inset-0"></div>
     <div className="form-control w-full md:w-1/2">
       <div className="input-group z-10">
-        <input type="text" className="input input-bordered w-full" value={url}/>
-        <button className="btn btn-square btn-info">
+        <input type="text" className="input input-bordered w-full" value={url} disabled/>
+        <button className="btn btn-square btn-info" onClick={async e => await navigator.clipboard.writeText(url)}>
           <FontAwesomeIcon icon={faCopy} />
         </button>
       </div>
