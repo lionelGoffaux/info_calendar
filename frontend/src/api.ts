@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const request = axios.create({
-  baseURL: "https://api.infocalendar.lionel-goffaux.be/api",
+  baseURL: "https://api." + location.hostname + "/api",
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
