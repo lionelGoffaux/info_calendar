@@ -1,21 +1,51 @@
-version: '3.4'
+version: '3'
 
 services:
-    api:
-        image: infocalendar-api:latest
-        build: ./api
-        container_name: api
-        ports:
-            - 5000:8000
-        restart: unless-stopped
-    syncer:
-        image: infocalendar-syncer:latest
-        build: ./syncer
-        container_name: syncer
-        depends_on:
-            - redis
-        restart: unless-stopped
-    redis:
-        container_name: redis
-        image: redis:latest
-        restart: unless-stopped
+  frontend:
+    image: infocalendar-frontend:latest
+    container_name: frontend
+    build: ./frontend
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.infocalendar-front-router.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.infocalendar-front-router.entrypoints=http"
+      - "traefik.http.services.infocalendar-front-service.loadbalancer.server.port=80"
+  api:
+    image: infocalendar-api:latest
+    build: ./api
+    container_name: api
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.infocalendar-back-router.rule=PathPrefix(`/api`) || PathPrefix(`/calendar.ics`) "
+      - "traefik.http.routers.infocalendar-back-router.entrypoints=http"
+      - "traefik.http.services.infocalendar-back-service.loadbalancer.server.port=8000"
+  syncer:
+    image: infocalendar-syncer:latest
+    build: ./syncer
+    container_name: syncer
+    depends_on:
+      - redis
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=false"
+  redis:
+    container_name: redis
+    image: redis:latest
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=false"
+  proxy:
+    image: traefik:v2.5.4
+    container_name: proxy
+    restart: unless-stopped
+    command:
+      - "--accesslog.filepath=/logs/access.log"
+      - "--providers.docker"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.http.address=:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "80:80"
