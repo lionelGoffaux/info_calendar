@@ -194,12 +194,12 @@ def add_event_to_courses_calendars(event, courses_calendars):
         courses_calendars (dict[str, Calendar]): The courses calendars
     """
     calendar = courses_calendars.get(event.name, Calendar())
-
-    calendar.events.add(event)
-    courses_calendars[event.name] = calendar
-
     event_type = get_type(event)
+
     if event_type:
+        calendar.events.add(event)
+        courses_calendars[event.name] = calendar
+
         calendar = courses_calendars.get(f'{event.name}/{event_type}', Calendar())
         calendar.events.add(event)
         courses_calendars[f'{event.name}/{event_type}'] = calendar
@@ -231,7 +231,7 @@ def save_calendars(calendar_name: str, calendars: dict[str, Calendar]):
         calendars(list[str, Calendar]): The calendars of each course.
     """
     for course_name, calendar in calendars.items():
-        redis.set(f'course/{calendar_name}/{course_name}', str(calendar))
+        redis.set(f'course/{calendar_name}/{course_name}', calendar.serialize())
 
 
 def sync_calendar(calendar_name: str, calendar_ics: str):
