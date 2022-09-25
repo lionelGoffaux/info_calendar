@@ -16,3 +16,4 @@ six==1.16.0
 TatSu==5.8.3
 Werkzeug==2.2.2
 wrapt==1.14.1
+flask-cors

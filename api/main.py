@@ -4,9 +4,11 @@ import json
 
 import redis
 from flask import Flask, request, jsonify, Response
+from flask_cors import CORS
 from ics import Calendar
 
 app = Flask(__name__)
+cors = CORS(app, resources={r"/*": {"origins": "infocalendar.lionel-goffaux.be"}})
 redis = redis.Redis(host='redis')
 
 

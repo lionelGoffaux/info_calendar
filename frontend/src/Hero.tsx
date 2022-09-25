@@ -14,7 +14,7 @@ export function Hero() {
   useEffect(() => {
     const jsonList = JSON.stringify(coursesList);
     const b64 = fromByteArray(new TextEncoder().encode(jsonList));
-    setUrl("https://"+location.hostname+"/calendar.ics?l="+b64)
+    setUrl("https://api."+location.hostname+"/calendar.ics?l="+b64)
   }, [coursesList])
 
   return <div className="flex flex items-center justify-center p-5  md:p-0 md:h-[500px] md:max-h-[500px] relative">
