@@ -1,7 +1,6 @@
 import base64
 import binascii
 import json
-import logging
 
 import redis
 from flask import Flask, request, jsonify, Response
