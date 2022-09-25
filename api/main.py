@@ -1,11 +1,26 @@
 import base64
+import binascii
+import json
 import logging
 
 import redis
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
+from ics import Calendar
 
 app = Flask(__name__)
 redis = redis.Redis(host='redis')
+
+
+def decode_list(encoded_list: list) -> list:
+    """Decode a list of bytes to a list of str.
+
+    Args:
+        encoded_list(list): The list to decode.
+
+    Returns:
+        list: The decoded list.
+    """
+    return [item.decode('utf-8') for item in encoded_list]
 
 
 def decode_set(encoded_set: set) -> set:
@@ -82,9 +97,47 @@ def calendar():
     """Return the calendar in the ics format using the courses list in parameter.
     The list is a JSON list in base64 of the courses' name.
     Examples:
-        - http://localhost/calendar.ics?courses=WyJiYWMxL2Jpb2xvZ3kvdHAiLCAibWExL21hdGhzIl0= -> ["bac1/biology/tp", "ma1/maths"]
+        - http://localhost/calendar.ics?l=WyJiYWMxL2Jpb2xvZ3kvdHAiLCAibWExL21hdGhzIl0= -> ["bac1/biology/tp", "ma1/maths"]
     """
-    pass
+    courses_list = request.args.get('l')
+    if courses_list is None:
+        return "Bad Request", 400
+
+    try:
+        courses_list = parse_courses_list(courses_list)
+    except (UnicodeDecodeError, json.JSONDecodeError, binascii.Error):
+        return "Bad Request", 400
+
+    courses_list = get_courses_redis_keys(courses_list)
+    result_calendar = create_calendar(courses_list)
+    resp = create_response(result_calendar)
+
+    return resp
+
+
+def parse_courses_list(courses_list):
+    courses_list = base64.b64decode(courses_list).decode('utf-8')
+    courses_list = json.loads(courses_list)
+    return courses_list
+
+
+def get_courses_redis_keys(courses_list):
+    known_calendars = decode_list(redis.keys("course/*"))
+    courses_list = [f'course/{course}' for course in courses_list if f'course/{course}' in known_calendars]
+    return courses_list
+
+
+def create_response(result_calendar):
+    resp = Response(result_calendar.serialize())
+    resp.headers["Content-Disposition"] = "attachment; filename=calendar.ics"
+    return resp
+
+
+def create_calendar(courses_list):
+    result_calendar = Calendar()
+    for course in courses_list:
+        result_calendar.events.update(Calendar(redis.get(course).decode('utf-8')).events)
+    return result_calendar
 
 
 if __name__ == '__main__':
