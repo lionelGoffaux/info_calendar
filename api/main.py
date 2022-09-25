@@ -8,7 +8,7 @@ from flask_cors import CORS
 from ics import Calendar
 
 app = Flask(__name__)
-cors = CORS(app, resources={r"/*": {"origins": "infocalendar.lionel-goffaux.be"}})
+cors = CORS(app)
 redis = redis.Redis(host='redis')
 
 
