@@ -1,8 +1,8 @@
-import {CourseSelector} from "./CourseSelector";
-import {Hero} from "./Hero";
-import {NavBar} from "./NavBar";
-import {Container} from "./Container";
-import {CoursesContext} from "./contexts";
+import {CourseSelector} from "./components/CourseSelector";
+import {Hero} from "./components/Hero";
+import {NavBar} from "./components/NavBar";
+import {Container} from "./components/Container";
+import {CoursesContext} from "./common/contexts";
 import {useState} from "react";
 
 function App() {

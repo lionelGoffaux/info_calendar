@@ -3,8 +3,8 @@ import {faCopy} from '@fortawesome/free-solid-svg-icons';
 import {useContext, useEffect, useState} from "react";
 import { fromByteArray } from 'base64-js';
 
-import bg_image from './img/bg.jpg'
-import {CoursesContext} from "./contexts";
+import bg_image from '../img/bg.jpg'
+import {CoursesContext} from "../common/contexts";
 
 export function Hero() {
 

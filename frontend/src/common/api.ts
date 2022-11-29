@@ -8,12 +8,12 @@ const request = axios.create({
   }
 });
 
-export async function getCalendars() {
+export async function getCalendars(): Promise<string[]> {
   const response = await request.get("/list_calendars");
   return response.data;
 }
 
-export async function getCourses(calendarName: string) {
+export async function getCourses(calendarName: string): Promise<string[]>{
   const response = await request.get(`/courses/${calendarName}`);
   return response.data;
 }

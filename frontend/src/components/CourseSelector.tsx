@@ -1,7 +1,7 @@
 import {useQuery} from 'react-query';
 import {useState} from "react";
 
-import {getCalendars} from "./api";
+import {getCalendars} from "../common/api";
 import {CourseList} from "./CourseList";
 
 export function CourseSelector() {
@@ -20,7 +20,7 @@ export function CourseSelector() {
     return <h1>loading...</h1>
 
 
-  if (error)
+  if (!data || error)
     return <h1>error...</h1>
 
 

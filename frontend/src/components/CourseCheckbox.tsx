@@ -1,5 +1,5 @@
 import {useContext} from "react";
-import {CoursesContext} from "./contexts";
+import {CoursesContext} from "../common/contexts";
 
 export function CourseCheckbox({calendar, course}: { calendar:string, course: String}) {
 
