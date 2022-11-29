@@ -8,4 +8,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-ENTRYPOINT [ "gunicorn", "-w", "3", "main:app", "--bind", "0.0.0.0" ]
+ENTRYPOINT [ "gunicorn", "-w", "3", "main:app", "--bind", "0.0.0.0:8000" ]

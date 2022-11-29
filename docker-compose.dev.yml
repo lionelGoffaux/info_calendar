@@ -1,0 +1,25 @@
+version: '3'
+
+services:
+  api:
+    image: infocalendar-api:latest
+    build: ./api
+    container_name: api
+    restart: unless-stopped
+    ports:
+      - 8000:8000
+  syncer:
+    image: infocalendar-syncer:latest
+    build: ./syncer
+    container_name: syncer
+    depends_on:
+      - redis
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=false"
+  redis:
+    container_name: redis
+    image: redis:latest
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=false"

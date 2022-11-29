@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const request = axios.create({
-  baseURL: "https://api." + location.hostname + "/api",
+  baseURL: import.meta.env.VITE_API_ENDPOINT,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'

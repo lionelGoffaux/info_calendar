@@ -3,3 +3,4 @@ venv
 .vscode
 .idea
 docker-compose.prod.yml
+**/*.local
