@@ -1,0 +1,19 @@
+{
+  "extends": [
+      "./node_modules/gts/",
+      "plugin:react/recommended"
+  ],
+  "rules": {
+    "node/no-unpublished-import": "off",
+    "react/jsx-uses-react": "off",
+    "react/react-in-jsx-scope": "off"
+  },
+  "env": {
+      "browser": true
+  },
+  "settings": {
+      "react": {
+      "version": "detect"
+      }
+  }
+}

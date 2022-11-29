@@ -1,10 +1,9 @@
-import {useContext} from "react";
-import {CoursesContext} from "../common/contexts";
+import {useContext} from 'react';
+import {CoursesContext} from '../common/contexts';
 
-export function CourseCheckbox({calendar, course}: { calendar:string, course: String}) {
-
+export function CourseCheckbox({calendar, course}: {calendar: string; course: String}) {
   const {coursesList, setCoursesList} = useContext(CoursesContext);
-  const courseFullName = calendar + "/" + course;
+  const courseFullName = calendar + '/' + course;
 
   const toggleCourse = () => {
     if (coursesList.includes(courseFullName)) {
@@ -12,14 +11,21 @@ export function CourseCheckbox({calendar, course}: { calendar:string, course: St
     } else {
       setCoursesList((courses: string[]) => [...courses, courseFullName].sort());
     }
-  }
+  };
 
-  return <>
-    <div className="form-control lg:px-5">
-      <label className="label cursor-pointer flex items-center">
-        <span className="label-text">{course}</span>
-        <input type="checkbox" className="toggle toggle-accent" checked={coursesList.includes(courseFullName)} onChange={() => toggleCourse()}/>
-      </label>
-    </div>
-  </>
+  return (
+    <>
+      <div className="form-control lg:px-5">
+        <label className="label cursor-pointer flex items-center">
+          <span className="label-text">{course}</span>
+          <input
+            type="checkbox"
+            className="toggle toggle-accent"
+            checked={coursesList.includes(courseFullName)}
+            onChange={() => toggleCourse()}
+          />
+        </label>
+      </div>
+    </>
+  );
 }
