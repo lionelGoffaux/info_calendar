@@ -1,6 +1,7 @@
 import asyncio
 import re
 import logging
+import time
 from typing import TextIO
 from datetime import datetime
 
@@ -318,6 +319,7 @@ def main():
     schedule.run_all()
     while True:
         schedule.run_pending()
+        time.sleep(1)
 
 
 def set_logging_config():
