@@ -12,7 +12,7 @@ export function Hero() {
 
   useEffect(() => {
     const jsonList = JSON.stringify(coursesList);
-    const b64 = Base64.encodeURL(jsonList);
+    const b64 = Base64.encode(jsonList);
     setUrl(import.meta.env.VITE_API_ENDPOINT + '/calendar.ics?l=' + b64);
   }, [coursesList]);
 

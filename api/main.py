@@ -117,7 +117,7 @@ def calendar():
 
 
 def parse_courses_list(courses_list):
-    courses_list = base64.b64decode(courses_list).decode('utf-8')
+    courses_list = base64.urlsafe_b64decode(courses_list).decode('utf-8')
     courses_list = json.loads(courses_list)
     return courses_list
 
