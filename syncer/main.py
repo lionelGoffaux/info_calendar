@@ -30,7 +30,7 @@ def parse_calendars_file(calendars_file: TextIO) -> list[tuple[str, str]]:
         calendars_file (TextIO): The calendars file
 
     Returns:
-        list[tuple[str, str]]: A list of the calendars' name and url. 
+        list[tuple[str, str]]: A list of the calendars' name and url.
     """
     calendars_list = yaml.safe_load(calendars_file)
     calendars_list = [(calendar['name'], calendar['url'])
@@ -240,7 +240,6 @@ def sync_calendar(calendar_name: str, calendar_ics: str):
     Args:
         calendar_name(str): The calendar's name.
         calendar_ics(str): The calendar's ics file.
-==
     """
     calendar = Calendar(calendar_ics)
     parsed_calendars = split_into_courses_calendars(calendar)
