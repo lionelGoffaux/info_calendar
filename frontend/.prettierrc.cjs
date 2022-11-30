@@ -1,4 +1,4 @@
 module.exports = {
-  ...require('gts/.prettierrc.json'),
-  printWidth: 110,
-}
+    ...require('gts/.prettierrc.json'),
+    printWidth: 110,
+};

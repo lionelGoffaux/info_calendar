@@ -1,7 +1,7 @@
 {
   "extends": [
-      "./node_modules/gts/",
-      "plugin:react/recommended"
+    "./node_modules/gts/",
+    "plugin:react/recommended"
   ],
   "rules": {
     "node/no-unpublished-import": "off",
@@ -13,7 +13,7 @@
   },
   "settings": {
       "react": {
-      "version": "detect"
+        "version": "detect"
       }
   }
 }
