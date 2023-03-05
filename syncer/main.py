@@ -2,6 +2,7 @@ import asyncio
 import re
 import logging
 import time
+import copy
 from typing import TextIO
 from datetime import datetime
 
@@ -183,8 +184,16 @@ def set_proper_event_name(event: Event):
         event (Event):  The event.
     """
     event.name = get_clean_name(event.name)
-    # if is_canceled(event):
-    #     event.name = '[ANNULÉ] ' + event.name
+
+def set_proper_event_name_with_sattus(event: Event):
+    """ Set a proper name for a event with status.
+
+    Args:
+        event (Event):  The event.
+    """
+    event.name = get_clean_name(event.name)
+    if is_canceled(event):
+        event.name = '[ANNULÉ] ' + event.name
 
 
 def add_event_to_courses_calendars(event, courses_calendars):
@@ -194,15 +203,17 @@ def add_event_to_courses_calendars(event, courses_calendars):
         event (Event):
         courses_calendars (dict[str, Calendar]): The courses calendars
     """
+    event_status = deepcopy(event)
+    set_proper_event_name_with_sattus(event_status)
+
     calendar = courses_calendars.get(event.name, Calendar())
+    calendar.events.add(event_status)
+    courses_calendars[event.name] = calendar
+
     event_type = get_type(event)
-
     if event_type:
-        calendar.events.add(event)
-        courses_calendars[event.name] = calendar
-
         calendar = courses_calendars.get(f'{event.name}/{event_type}', Calendar())
-        calendar.events.add(event)
+        calendar.events.add(event_status)
         courses_calendars[f'{event.name}/{event_type}'] = calendar
 
 
