@@ -183,8 +183,8 @@ def set_proper_event_name(event: Event):
         event (Event):  The event.
     """
     event.name = get_clean_name(event.name)
-    if is_canceled(event):
-        event.name = '[ANNULÉ] ' + event.name
+    # if is_canceled(event):
+    #     event.name = '[ANNULÉ] ' + event.name
 
 
 def add_event_to_courses_calendars(event, courses_calendars):
