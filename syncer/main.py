@@ -203,7 +203,7 @@ def add_event_to_courses_calendars(event, courses_calendars):
         event (Event):
         courses_calendars (dict[str, Calendar]): The courses calendars
     """
-    event_status = deepcopy(event)
+    event_status = copy.deepcopy(event)
     set_proper_event_name_with_sattus(event_status)
 
     calendar = courses_calendars.get(event.name, Calendar())
