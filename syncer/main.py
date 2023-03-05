@@ -173,7 +173,7 @@ def is_canceled(event: Event) -> bool:
         bool: True if the event is canceled.
         bool: True if the event is canceled.
     """
-    return event.name and "annulé" in event.name.lower()
+    return (event.name and "annulé" in event.name.lower()) or (event.description and "annulé" in event.description.lower())
 
 
 def set_proper_event_name(event: Event):
